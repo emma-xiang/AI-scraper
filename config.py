@@ -11,15 +11,17 @@ TOOLS_CSV = DATA_DIR / "tools.csv"
 # 浏览器配置
 BROWSER_CONFIG = {
     "headless": True,  # 无头模式运行
-    "page_load_timeout": 30,  # 页面加载超时时间（秒）
-    "implicit_wait": 10,  # 隐式等待时间（秒）
+    "page_load_timeout": 60,  # 页面加载超时时间（秒）
+    "implicit_wait": 30,  # 隐式等待时间（秒）
 }
 
 # 爬虫配置
 SCRAPER_CONFIG = {
-    "scroll_pause_time": 2,  # 滚动等待时间（秒）
-    "max_retries": 3,  # 最大重试次数
+    "scroll_pause_time": 5,  # 滚动等待时间（秒）
+    "max_retries": 5,  # 最大重试次数
     "batch_size": 100,  # 每批处理的工具数量
+    "target_tools": 500,  # 目标工具数量
+    "load_wait_time": 10,  # 页面初始加载等待时间（秒）
 }
 
 # 数据存储配置

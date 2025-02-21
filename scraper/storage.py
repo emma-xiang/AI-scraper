@@ -6,8 +6,11 @@ from pathlib import Path
 from loguru import logger
 from typing import List, Dict
 import os
+import sys
 
-from ..config import STORAGE_CONFIG, TOOLS_CSV
+# 添加项目根目录到Python路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import STORAGE_CONFIG, TOOLS_CSV
 
 class DataStorage:
     """数据存储管理器"""

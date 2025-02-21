@@ -47,55 +47,36 @@ def main():
         # 备份现有数据
         storage.backup_csv()
         
-        tools_count = 0
-        retry_count = 0
+        # 滚动加载直到达到目标工具数量
+        target_reached = browser.scroll_until_count(SCRAPER_CONFIG["target_tools"])
+        if not target_reached:
+            logger.warning(f"未能达到目标工具数量 {SCRAPER_CONFIG['target_tools']}")
         
-        while retry_count < SCRAPER_CONFIG["max_retries"]:
-            try:
-                # 滚动加载更多内容
-                browser.scroll_to_bottom()
-                
-                # 获取页面内容并解析
-                page_source = browser.driver.page_source
-                tools = ToolParser.parse_tool_cards(page_source)
-                
-                # 过滤已存在的工具
-                new_tools = [
-                    tool for tool in tools
-                    if tool['url'] not in existing_tools
-                ]
-                
-                if new_tools:
-                    # 保存新工具信息
-                    storage.save_tools(new_tools, mode='a')
-                    tools_count += len(new_tools)
-                    existing_tools.update(tool['url'] for tool in new_tools)
-                    logger.info(f"当前已抓取 {tools_count} 个工具")
-                    
-                    # 批量处理，达到批次大小后暂停
-                    if tools_count % SCRAPER_CONFIG["batch_size"] == 0:
-                        logger.info("达到批次大小，暂停处理")
-                        time.sleep(SCRAPER_CONFIG["scroll_pause_time"] * 2)
-                
-                # 如果没有新工具，可能已经到达底部
-                if not new_tools:
-                    logger.info("没有发现新的工具，可能已到达底部")
-                    break
-                    
-            except WebDriverException as e:
-                retry_count += 1
-                logger.warning(f"出现异常，重试 ({retry_count}/{SCRAPER_CONFIG['max_retries']}): {str(e)}")
-                if retry_count < SCRAPER_CONFIG["max_retries"]:
-                    time.sleep(SCRAPER_CONFIG["scroll_pause_time"] * 2)
-                    browser.refresh_page()
-                else:
-                    logger.error("达到最大重试次数，程序终止")
-                    break
+        # 获取页面内容并解析
+        page_source = browser.driver.page_source
+        tools = ToolParser.parse_tool_cards(page_source)
         
-        # 合并重复记录
-        storage.merge_duplicates()
+        if not tools:
+            logger.error("未能解析到任何工具信息")
+            return
         
-        logger.info(f"爬虫程序完成，共抓取 {tools_count} 个工具")
+        # 过滤已存在的工具
+        new_tools = [
+            tool for tool in tools
+            if tool['url'] not in existing_tools
+        ]
+        
+        if new_tools:
+            # 保存新工具信息
+            storage.save_tools(new_tools, mode='a')
+            logger.info(f"成功保存 {len(new_tools)} 个新工具")
+            
+            # 合并重复记录
+            storage.merge_duplicates()
+            
+            logger.info(f"爬虫程序完成，共抓取 {len(tools)} 个工具，新增 {len(new_tools)} 个工具")
+        else:
+            logger.info("没有发现新的工具")
         
     except Exception as e:
         logger.error(f"程序运行出错: {str(e)}")
